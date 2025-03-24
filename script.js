@@ -1,4 +1,3 @@
-// Calendar Component
 class Calendar {
     constructor() {
         this.currentDate = new Date();
@@ -9,201 +8,189 @@ class Calendar {
             'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
             'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
         ];
+        this.config = {
+            animationDuration: 300,
+            maxEventCount: 5
+        };
     }
 
     init() {
-        if (!this.checkElements()) return;
-        this.renderCalendar();
-        this.addNavigation();
+        this.loadDependencies()
+            .then(() => this.setupEventListeners())
+            .then(() => this.renderCalendar())
+            .catch(error => console.error('Initialization error:', error));
     }
 
-    checkElements() {
-        return !!document.getElementById('calendarBody') && 
-               !!document.querySelector('.calendar-header');
+    loadDependencies() {
+        return new Promise((resolve, reject) => {
+            if (typeof Swiper === 'undefined') {
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/swiper/swiper-bundle.min.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            } else {
+                resolve();
+            }
+        });
+    }
+
+    setupEventListeners() {
+        window.addEventListener('resize', () => this.debounce(this.renderCalendar, 150));
+        document.addEventListener('click', e => this.handleDocumentClick(e));
     }
 
     renderCalendar() {
-        try {
-            const year = this.currentDate.getFullYear();
-            const month = this.currentDate.getMonth();
+        const year = this.currentDate.getFullYear();
+        const month = this.currentDate.getMonth();
+        
+        document.getElementById('monthName').textContent = this.monthNames[month];
+        document.getElementById('year').textContent = year;
+
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+        const daysInMonth = lastDay.getDate();
+
+        let calendarBody = '';
+        let dayCounter = 1 - startDay;
+
+        for (let i = 0; i < 6; i++) {
+            let week = '<tr>';
             
-            document.getElementById('monthName').textContent = this.monthNames[month];
-            document.getElementById('year').textContent = year;
-
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-            const daysInMonth = lastDay.getDate();
-
-            let calendarBody = '';
-            let dayCounter = 1 - startDay;
-
-            for (let i = 0; i < 6; i++) {
-                let week = '<tr>';
-                for (let j = 0; j < 7; j++) {
-                    const currentDay = dayCounter + j + i * 7;
-                    const isCurrentMonth = currentDay > 0 && currentDay <= daysInMonth;
-                    const day = isCurrentMonth ? currentDay : '';
+            for (let j = 0; j < 7; j++) {
+                const currentDay = dayCounter + j + i * 7;
+                const isCurrentMonth = currentDay > 0 && currentDay <= daysInMonth;
+                const day = isCurrentMonth ? currentDay : '';
+                
+                let classes = [];
+                if (isCurrentMonth) {
+                    const date = new Date(year, month, currentDay);
                     
-                    let classes = [];
-                    if (isCurrentMonth) {
-                        const date = new Date(year, month, currentDay);
-                        if (date.toDateString() === new Date().toDateString()) {
-                            classes.push('today');
-                        }
-                        if (this.weekDays.includes(date.getDay())) {
-                            classes.push('wipeday');
-                        }
+                    if (date.toDateString() === new Date().toDateString()) {
+                        classes.push('today');
                     }
-                    week += `<td class="${classes.join(' ')}">${day}</td>`;
+                    
+                    if (this.weekDays.includes(date.getDay())) {
+                        classes.push('wipeday');
+                    }
                 }
-                week += '</tr>';
-                calendarBody += week;
-                if (dayCounter + (i + 1) * 7 > daysInMonth) break;
-            }
 
-            document.getElementById('calendarBody').innerHTML = calendarBody;
-        } catch (error) {
-            console.error('Calendar render error:', error);
+                week += `<td class="${classes.join(' ')}" ${day ? `data-day="${day}"` : ''}>${day}</td>`;
+            }
+            
+            week += '</tr>';
+            calendarBody += week;
+            
+            if (dayCounter + (i + 1) * 7 > daysInMonth) break;
         }
+
+        document.getElementById('calendarBody').innerHTML = calendarBody;
     }
 
     addNavigation() {
-        const navHTML = `
+        const nav = document.createElement('div');
+        nav.className = 'calendar-nav';
+        nav.innerHTML = `
             <button class="prev-month">‹</button>
             <button class="next-month">›</button>
         `;
         
-        const navContainer = document.createElement('div');
-        navContainer.className = 'calendar-nav';
-        navContainer.innerHTML = navHTML;
+        document.querySelector('.calendar-header').appendChild(nav);
         
-        document.querySelector('.calendar-header').appendChild(navContainer);
-        
-        navContainer.querySelector('.prev-month').addEventListener('click', () => {
+        nav.querySelector('.prev-month').addEventListener('click', () => {
             this.currentDate.setMonth(this.currentDate.getMonth() - 1);
             this.renderCalendar();
         });
         
-        navContainer.querySelector('.next-month').addEventListener('click', () => {
+        nav.querySelector('.next-month').addEventListener('click', () => {
             this.currentDate.setMonth(this.currentDate.getMonth() + 1);
             this.renderCalendar();
         });
     }
 }
 
-// Swiper Initialization
-function initSwiper() {
-    try {
-        const bannerContainer = document.querySelector('.bannerContainer');
-        if (!bannerContainer) return;
-
-        bannerContainer.innerHTML = `
-            <div class="swiper">
-                <div class="swiper-wrapper">
-                    ${['banner_x2', 'banner_intro', 'banner_bonuses', 'banner_moders']
-                        .map(img => `
-                            <div class="swiper-slide">
-                                <img src="https://cdn.rustage.su/aboba/img/${img}.png">
-                            </div>
-                        `).join('')}
-                </div>
-                <div class="swiper-pagination"></div>
-                <div class="swiper-button-prev"></div>
-                <div class="swiper-button-next"></div>
-            </div>
-        `;
-
-        new Swiper('.swiper', {
-            loop: true,
-            autoplay: { delay: 7000 },
-            pagination: { el: '.swiper-pagination', clickable: true },
-            navigation: {
-                nextEl: '.swiper-button-next',
-                prevEl: '.swiper-button-prev',
-            }
-        });
-    } catch (error) {
-        console.error('Swiper init error:', error);
+    debounce(func, delay) {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(this, args), delay);
+        };
     }
 }
 
-// UI Enhancements
-function enhanceUI() {
-    const injectSocials = () => {
-        try {
-            const socialsHTML = `
-                <div class="socials">
-                    ${Object.entries({
-                        vk: window.vk_link,
-                        telegram: window.telegram_link,
-                        discord: window.discord_link
-                    }).map(([network, url]) => `
-                        <a href="${url}" target="_blank" class="socials-${network}">
-                            <img src="https://gspics.org/images/2025/02/04/IVD${{
-                                vk: 'EZD',
-                                telegram: 'hcL',
-                                discord: 'tgy'
-                            }[network]}.png">
-                        </a>
-                    `).join('')}
-                </div>
-            `;
-            
-            const target = document.querySelector('.PlayerMenu-module__langSwitcher');
-            if (target) target.insertAdjacentHTML('beforeend', socialsHTML);
-        } catch (error) {
-            console.error('Socials injection error:', error);
-        }
-    };
+class ComponentManager {
+    constructor() {
+        this.components = {};
+        this.retryInterval = 100;
+        this.maxRetries = 10;
+    }
 
-    const injectIcons = () => {
-        try {
-            const icons = {
-                '.HeaderNav-module__link[href="/"]': 'IVDBPO',
-                '.PlayerBalance-module__btn': 'wallet.png',
-                '.SupportLink-module__link': 'IVDs4i'
-            };
+    registerComponent(name, checkFn, initFn) {
+        this.components[name] = {
+            checkFn,
+            initFn,
+            attempts: 0
+        };
+    }
 
-            Object.entries(icons).forEach(([selector, icon]) => {
-                const element = document.querySelector(selector);
-                if (element) {
-                    element.insertAdjacentHTML('beforeend', `
-                        <img class="nav-icon" src="${icon.startsWith('http') 
-                            ? icon 
-                            : 'https://gspics.org/images/2025/02/04/' + icon}">
-                    `);
+    start() {
+        Object.entries(this.components).forEach(([name, component]) => {
+            const interval = setInterval(() => {
+                if (component.checkFn()) {
+                    clearInterval(interval);
+                    component.initFn();
+                } else if (component.attempts++ > this.maxRetries) {
+                    clearInterval(interval);
+                    console.error(`Component ${name} failed to load`);
                 }
-            });
-        } catch (error) {
-            console.error('Icons injection error:', error);
+            }, this.retryInterval);
+        });
+    }
+}
+
+function initSwiper() {
+    
+}
+
+function main() {
+    const componentManager = new ComponentManager();
+    
+    componentManager.registerComponent('HEADER', 
+        () => !!document.querySelector('.PlayerMenu-module__langSwitcher'),
+        () => {
+            // Логика инициализации хедера
         }
-    };
+    );
 
-    injectSocials();
-    injectIcons();
-}
+    componentManager.registerComponent('WIDGETS', 
+        () => !!document.querySelector('.widget-container'),
+        () => {
+            new Calendar().init();
+            initSwiper();
+        }
+    );
 
-// Main Controller
-function initApp() {
-    window.componentsManager.addListener('WIDGETS', 'DID_MOUNT', () => {
-        setTimeout(() => {
-            try {
-                new Calendar().init();
-                initSwiper();
-            } catch (error) {
-                console.error('Components init error:', error);
-            }
-        }, 1500);
+    componentManager.start();
+
+    // Дополнительная логика
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            window.dispatchEvent(new CustomEvent('appResume'));
+        }
     });
-
-    window.componentsManager.load();
-    enhanceUI();
 }
 
-// Entry Point
-if (window.isAppReady) {
-    initApp();
-} else {
-    window.addEventListener('appReady', initApp);
-}
+const initInterval = setInterval(() => {
+    if (window.isAppReady) {
+        clearInterval(initInterval);
+        main();
+    }
+}, 50);
+
+setTimeout(() => {
+    if (!window.isAppReady) {
+        console.warn('Fallback initialization');
+        main();
+    }
+}, 5000);
