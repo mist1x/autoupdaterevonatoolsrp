@@ -1,3 +1,4 @@
+// Calendar Component
 class Calendar {
     constructor() {
         this.currentDate = new Date();
@@ -11,229 +12,198 @@ class Calendar {
     }
 
     init() {
+        if (!this.checkElements()) return;
         this.renderCalendar();
         this.addNavigation();
     }
 
+    checkElements() {
+        return !!document.getElementById('calendarBody') && 
+               !!document.querySelector('.calendar-header');
+    }
+
     renderCalendar() {
-        const year = this.currentDate.getFullYear();
-        const month = this.currentDate.getMonth();
-        
-        document.getElementById('monthName').textContent = this.monthNames[month];
-        document.getElementById('year').textContent = year;
-
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-        const daysInMonth = lastDay.getDate();
-
-        let calendarBody = '';
-        let dayCounter = 1 - startDay;
-
-        for (let i = 0; i < 6; i++) {
-            let week = '<tr>';
+        try {
+            const year = this.currentDate.getFullYear();
+            const month = this.currentDate.getMonth();
             
-            for (let j = 0; j < 7; j++) {
-                const currentDay = dayCounter + j + i * 7;
-                const isCurrentMonth = currentDay > 0 && currentDay <= daysInMonth;
-                const day = isCurrentMonth ? currentDay : '';
-                
-                let classes = [];
-                if (isCurrentMonth) {
-                    const date = new Date(year, month, currentDay);
+            document.getElementById('monthName').textContent = this.monthNames[month];
+            document.getElementById('year').textContent = year;
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+            const daysInMonth = lastDay.getDate();
+
+            let calendarBody = '';
+            let dayCounter = 1 - startDay;
+
+            for (let i = 0; i < 6; i++) {
+                let week = '<tr>';
+                for (let j = 0; j < 7; j++) {
+                    const currentDay = dayCounter + j + i * 7;
+                    const isCurrentMonth = currentDay > 0 && currentDay <= daysInMonth;
+                    const day = isCurrentMonth ? currentDay : '';
                     
-                    if (date.toDateString() === new Date().toDateString()) {
-                        classes.push('today');
+                    let classes = [];
+                    if (isCurrentMonth) {
+                        const date = new Date(year, month, currentDay);
+                        if (date.toDateString() === new Date().toDateString()) {
+                            classes.push('today');
+                        }
+                        if (this.weekDays.includes(date.getDay())) {
+                            classes.push('wipeday');
+                        }
                     }
-                    
-                    if (this.weekDays.includes(date.getDay())) {
-                        classes.push('wipeday');
-                    }
+                    week += `<td class="${classes.join(' ')}">${day}</td>`;
                 }
-
-                week += `<td class="${classes.join(' ')}" ${day ? `data-day="${day}"` : ''}>${day}</td>`;
+                week += '</tr>';
+                calendarBody += week;
+                if (dayCounter + (i + 1) * 7 > daysInMonth) break;
             }
-            
-            week += '</tr>';
-            calendarBody += week;
-            
-            if (dayCounter + (i + 1) * 7 > daysInMonth) break;
-        }
 
-        document.getElementById('calendarBody').innerHTML = calendarBody;
+            document.getElementById('calendarBody').innerHTML = calendarBody;
+        } catch (error) {
+            console.error('Calendar render error:', error);
+        }
     }
 
     addNavigation() {
-        const nav = document.createElement('div');
-        nav.className = 'calendar-nav';
-        nav.innerHTML = `
+        const navHTML = `
             <button class="prev-month">‹</button>
             <button class="next-month">›</button>
         `;
         
-        document.querySelector('.calendar-header').appendChild(nav);
+        const navContainer = document.createElement('div');
+        navContainer.className = 'calendar-nav';
+        navContainer.innerHTML = navHTML;
         
-        nav.querySelector('.prev-month').addEventListener('click', () => {
+        document.querySelector('.calendar-header').appendChild(navContainer);
+        
+        navContainer.querySelector('.prev-month').addEventListener('click', () => {
             this.currentDate.setMonth(this.currentDate.getMonth() - 1);
             this.renderCalendar();
         });
         
-        nav.querySelector('.next-month').addEventListener('click', () => {
+        navContainer.querySelector('.next-month').addEventListener('click', () => {
             this.currentDate.setMonth(this.currentDate.getMonth() + 1);
             this.renderCalendar();
         });
     }
 }
 
+// Swiper Initialization
 function initSwiper() {
-    
     try {
-        const bannerContainer = document.querySelector('.container.bannerContainer')
-        
-        if (!bannerContainer) {
-            return;
-        }
+        const bannerContainer = document.querySelector('.bannerContainer');
+        if (!bannerContainer) return;
 
-        const originalContent = bannerContainer.innerHTML;
-
-        bannerContainer.innerHTML = '';
-
-        const swiperHTML = `
-            <swiper-container 
-                class="mySwiper"
-                pagination="true"
-                pagination-clickable="true"
-                navigation="true"
-                space-between="30"
-                centered-slides="true"
-                autoplay-delay="7000"
-                autoplay-disable-on-interaction="false"
-            >
-                <swiper-slide style="width: 1240px; margin-right: 30px;">
-                    <img src="https://cdn.rustage.su/aboba/img/banner_x2.png">
-                </swiper-slide>
-                <swiper-slide style="width: 1240px; margin-right: 30px;">
-                    <img src="https://cdn.rustage.su/aboba/img/banner_intro.png">
-                </swiper-slide>
-                <swiper-slide style="width: 1240px; margin-right: 30px;">
-                    <img src="https://cdn.rustage.su/aboba/img/banner_bonuses.png">
-                </swiper-slide>
-                <swiper-slide style="width: 1240px; margin-right: 30px;">
-                    <img src="https://cdn.rustage.su/aboba/img/banner_moders.png">
-                </swiper-slide>
-            </swiper-container>
+        bannerContainer.innerHTML = `
+            <div class="swiper">
+                <div class="swiper-wrapper">
+                    ${['banner_x2', 'banner_intro', 'banner_bonuses', 'banner_moders']
+                        .map(img => `
+                            <div class="swiper-slide">
+                                <img src="https://cdn.rustage.su/aboba/img/${img}.png">
+                            </div>
+                        `).join('')}
+                </div>
+                <div class="swiper-pagination"></div>
+                <div class="swiper-button-prev"></div>
+                <div class="swiper-button-next"></div>
+            </div>
         `;
 
-        bannerContainer.innerHTML = swiperHTML;
-
-        const swiperElement = bannerContainer.querySelector('swiper-container');
-
-        if (!swiperElement) {
-            return;
-        }
-
-        const swiper = new Swiper(swiperElement, {
+        new Swiper('.swiper', {
             loop: true,
-            autoplay: {
-                delay: 7000,
-                disableOnInteraction: false,
-            },
-			navigation: {
-              nextEl: '.swiper-button-next',
-              prevEl: '.swiper-button-prev',
+            autoplay: { delay: 7000 },
+            pagination: { el: '.swiper-pagination', clickable: true },
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
             }
         });
-
     } catch (error) {
-        if (error instanceof TypeError) {
-        }
-    } finally {
-        console.groupEnd();
+        console.error('Swiper init error:', error);
     }
 }
 
-function main() {
-    window.dispatchEvent(new CustomEvent("setCustomConfig"));
-    window.dispatchEvent(new CustomEvent("initState"));
-    window.dispatchEvent(new CustomEvent("initComponentsManager"));
-  	
-	
-    window.componentsManager.addListener('HEADER', 'DID_MOUNT', () => {
-      
-      	const { player } = window.getState().player
+// UI Enhancements
+function enhanceUI() {
+    const injectSocials = () => {
+        try {
+            const socialsHTML = `
+                <div class="socials">
+                    ${Object.entries({
+                        vk: window.vk_link,
+                        telegram: window.telegram_link,
+                        discord: window.discord_link
+                    }).map(([network, url]) => `
+                        <a href="${url}" target="_blank" class="socials-${network}">
+                            <img src="https://gspics.org/images/2025/02/04/IVD${{
+                                vk: 'EZD',
+                                telegram: 'hcL',
+                                discord: 'tgy'
+                            }[network]}.png">
+                        </a>
+                    `).join('')}
+                </div>
+            `;
+            
+            const target = document.querySelector('.PlayerMenu-module__langSwitcher');
+            if (target) target.insertAdjacentHTML('beforeend', socialsHTML);
+        } catch (error) {
+            console.error('Socials injection error:', error);
+        }
+    };
 
-        
-      	const socials = `
-        <div class="socials">
-          <a href="${window.vk_link}" target="_blank" class="socials-vk" title="Наш ВКонтакте">
-            <img class="socials-icon" src="https://gspics.org/images/2025/02/04/IVDEZD.png">
-          </a>
-          <a href="${window.telegram_link}" target="_blank" class="socials-telegram" title="Наш Telegram канал">
-            <img class="socials-icon" src="https://gspics.org/images/2025/02/04/IVDhcL.png">
-          </a>
-          <a href="${window.discord_link}" target="_blank" class="socials-discord" title="Наш Discord">
-            <img class="socials-icon" src="https://gspics.org/images/2025/02/04/IVDtgy.png">
-          </a>
-        </div>
-        `
-        
-        const shopIcon = `
-			<img class="nav-icon" src="https://gspics.org/images/2025/02/04/IVDBPO.png">
-        `
-        
-        const supIcon = `
-			<img class="nav-icon" src="https://gspics.org/images/2025/02/04/IVDs4i.png">
-		`
-        
-        const balanceIcon = `
-			<img class="nav-icon" src="https://cdn.rustage.su/aboba/img/wallet.png">
-		`
-        
-        const langBtn = document.querySelector('.PlayerMenu-module__langSwitcher')
-		langBtn.insertAdjacentHTML('beforeend', socials)
+    const injectIcons = () => {
+        try {
+            const icons = {
+                '.HeaderNav-module__link[href="/"]': 'IVDBPO',
+                '.PlayerBalance-module__btn': 'wallet.png',
+                '.SupportLink-module__link': 'IVDs4i'
+            };
 
-		const shopBtn = document.querySelector('.HeaderNav-module__link[href="/"]')
-		shopBtn.insertAdjacentHTML('beforeend', shopIcon)
-      	
-		const balanceBtn = document.querySelector('.PlayerBalance-module__btn')
-		balanceBtn.insertAdjacentHTML('beforeend', balanceIcon)
+            Object.entries(icons).forEach(([selector, icon]) => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    element.insertAdjacentHTML('beforeend', `
+                        <img class="nav-icon" src="${icon.startsWith('http') 
+                            ? icon 
+                            : 'https://gspics.org/images/2025/02/04/' + icon}">
+                    `);
+                }
+            });
+        } catch (error) {
+            console.error('Icons injection error:', error);
+        }
+    };
 
-		const supBtn = document.querySelector('.SupportLink-module__link')
-		supBtn.insertAdjacentHTML('beforeend', supIcon)
-    });
+    injectSocials();
+    injectIcons();
+}
 
-
+// Main Controller
+function initApp() {
     window.componentsManager.addListener('WIDGETS', 'DID_MOUNT', () => {
         setTimeout(() => {
             try {
                 new Calendar().init();
-				initSwiper();
+                initSwiper();
             } catch (error) {
-                console.error('Calendar init error:', error);
+                console.error('Components init error:', error);
             }
         }, 1500);
     });
 
     window.componentsManager.load();
-
-    window.copyConnect = function(element) {
-        navigator.clipboard.writeText(window.server_connect_1)
-            .then(() => {
-                element.textContent = 'Скопировано!';
-                setTimeout(() => {
-                    element.textContent = 'Скопировать коннект';
-                }, 2000);
-            })
-            .catch(err => {
-                console.error('Copy failed:', err);
-            });
-    };
+    enhanceUI();
 }
 
-if(window.isAppReady) {
-  main();
+// Entry Point
+if (window.isAppReady) {
+    initApp();
 } else {
-    window.addEventListener('appReady', () => {
-    main();
-  })
+    window.addEventListener('appReady', initApp);
 }
